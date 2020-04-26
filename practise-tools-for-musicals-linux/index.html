@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> Making practise tools for amateur musicals, Linux edition | Lucas Wilson-Richter</title>
+<meta name="description" content="Summary of the equipment and Linux software I used to make sing-along practise mp3s for amateur singers">
+<meta name="keywords" content="music software linux audio">
+<link rel="stylesheet" href="/css/main.css">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="theme-color" content="#2ecc71">
+<link rel="canonical" href="https://lucasrichter.id.au/practise-tools-for-musicals-linux">
+<link rel="alternate" type="application/rss+xml" title="Lucas Wilson-Richter" href="https://lucasrichter.id.au/feed.xml" />
+  </head>
+  <body class="single">
+    <main class="container">
+        <header class="site-header">
+  <div class="container txt-center">
+    <nav class="navbar">
+      <ul>
+        <li><a href="/">home</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/about">about</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/feed.xml" target="_blank"><i class="icon icon-feed"></i> feed</a></li>
+      </ul>
+    </nav>
+    <a href="/" class="author-thumb">
+      <img src="/images/author.jpg" alt="Author thumbnail" class="dot">
+    </a>
+    <h1>Lucas Wilson-Richter</h1>
+    <hr class="hr">
+  </div>
+</header>
+        <section class="main-content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">Making practise tools for amateur musicals, Linux edition</h1>
+    <p class="post-meta">Jul 31, 2018</p>
+  </header>
+  <div class="post-content">
+    <p>A couple of years ago, I was Musical Director for a 
+<a href="/2017/04/23/making-practise-tools-for-amateur-musicals.html">local musical theatre production</a>. 
+This year, I got the opportunity to do something similar for a production of 
+Rodgers &amp; Hammerstein’s <em>Cinderella</em>, and I spent quite a bit of time making
+practise materials for the cast. In the intervening time, I switched from Mac to
+Linux for my personal machine, so I thought an update on the tools I used might 
+be in order.</p>
+<p>There were a couple of differences in my objectives for this project. For
+example, rather than producing both scores and sing-along practice tracks as
+with the last project, I only needed to make the tracks in this case (what a 
+relief!).</p>
+<p>That had an effect on the methods I chose to use when recording. When I was 
+making scores, getting note values exactly right was a high priority, so I used
+step recording for note input. That gave me the precision I needed for a score, 
+but was quite time consuming. Since I was only making the sing-along tracks for
+this latest project, I was able to play the score directly into the recording 
+(albeit in short sections, one hand at a time). You’ll also find that I don’t 
+mention any score engraving software this time around.</p>
+<h2 id="hardware">Hardware</h2>
+<h3 id="system76-galago-laptop">System76 Galago laptop</h3>
+<p>System76 specialise in Linux laptops, customisable in almost every respect.
+Their 13-inch <a href="https://system76.com/laptops/galago">Galago</a> model features 
+a HiDPI display, which I’m quite enjoying. The onboard audio, however, 
+leaves a bit to be desired when it comes to recording. The built-in headphone 
+and mic channels are both exposed to quite a bit of noise, which results in 
+substandard recordings, especially when you’re recording 4 vocal parts and 
+layering them together!</p>
+<p>Hence, my next investment.</p>
+<h3 id="focusrite-scarlett-2i2-usb-audio-interface">Focusrite Scarlett 2i2 USB audio interface</h3>
+<p><a href="https://us.focusrite.com/usb-audio-interfaces/scarlett-2i2">This little fellow</a>
+cleared my line noise problems right up, and works with Linux (or at least 
+Ubuntu) out of the box.</p>
+<h3 id="shure-sm58-microphonehttpwwwshurecomamericasproductsmicrophonessmsm58-vocal-microphone"><a href="http://www.shure.com/americas/products/microphones/SM/sm58-vocal-microphone">Shure SM58 microphone</a></h3>
+<p>A standard choice for an omnidirectional dynamic mic. No regrets here.</p>
+<h3 id="m-audio-keystation-49">M-Audio Keystation 49</h3>
+<p>This one hasn’t changed from the previous edition. I’m still pretty pleased with 
+it, and I’ve learned a little more about how to use it as well. Fortunately for
+me, it also works out of the box with both Mac and Linux.</p>
+<h2 id="software">Software</h2>
+<h3 id="daw-ardour">DAW: Ardour</h3>
+<p>The Digital Audio Workstation (DAW) I chose is called <a href="https://ardour.org/">Ardour</a>.
+I chose it mostly because it (a) connects with JACK easily, (b) is libre and
+free, and (c) seemed popular, and hence would have some degree of community 
+support if I got into trouble.</p>
+<p>It served me well, though I was on a continuous learning curve through the
+entire process of recording about 20 tracks!</p>
+<h3 id="jack--qjackctl">JACK &amp; Qjackctl</h3>
+<p><a href="https://jackaudio.org">JACK</a> (JACK Audio Connection Kit) does the job of
+connecting a system’s many audio inputs and outputs together. It can be a bit
+daunting to get started, but I found that 
+<a href="http://libremusicproduction.com/articles/demystifying-jack-%E2%80%93-beginners-guide-getting-started-jack">this guide</a>
+really helped me understand what I was doing.</p>
+<h3 id="fluidsynth--qsynth">FluidSynth &amp; Qsynth</h3>
+<p><a href="https://fluidsynth.org">FluidSynth</a> is a MIDI software synthesiser, which uses
+SoundFonts to turn MIDI signals into sounds.</p>
+<p><a href="https://qsynth.sourceforge.io/">Qsynth</a> is a GUI for FluidSynth, which makes 
+it easier to manage.</p>
+<p>I found these useful for when I wasn’t recording with Ardour (which manages its
+own FluidSynth), but still wanted to use the MIDI keyboard and hear what I was 
+playing.</p>
+<h3 id="a2jmidid">a2jmidid</h3>
+<p>So Ardour, FluidSynth and friends were all using JACK to communicate with one 
+another, and that was great. I faced a little challenge when I realised that my
+MIDI keyboard was sending signals on the older ALSA bus. A quick search revealed
+<code>a2jmidid</code>, or the ALSA to JACK MIDI Daemon, which basically does what it says 
+on the tin: it takes MIDI signals from the ALSA bus and retransmits them over a 
+connection to JACK, and vice versa. Very handy.</p>
+<h3 id="foreman">Foreman</h3>
+<p>After a while, I got tired of starting all these different tools in sequence. 
+Occasionally I’d start them up in the wrong order, or I’d be running command 
+number 5 and suddenly realise that I’d made a mistake in command number 2. Super 
+frustrating.</p>
+<p>Fortunately for me, I’d encountered a tool for a purpose very like this, in my
+work as a software engineer. <a href="https://github.com/ddollar/foreman#foreman">Foreman</a>
+is a handy little utility for running a number of programs at the same time. To
+use it, you specify all the processes you want to run in a file named <code>Procfile</code>.
+Foreman reads that file and starts the processes you ask for. It’s quite a simple
+tool, so it lacks (as far as I know) any features about getting those processes
+to communicate with each other. Fortunately, that’s what Jack is made for.</p>
+<h3 id="controlling-ardour-from-a-tablet-using-touchdaw-and-qmidinet">Controlling Ardour from a tablet using TouchDAW and QMidiNet</h3>
+<p>Once I’d recorded all my piano and vocal tracks (with some help from a couple of 
+very generous friends), it was time to mix. It turns out that controlling a mixer
+using a mouse or trackpad can be a tedious experience. To help with this, I 
+started looking into other ways of controlling Ardour, preferably using touch.</p>
+<p>I tried out a few different tools, and none of them really satisfied. I got the 
+best results using <a href="https://play.google.com/store/apps/details?id=de.humatic.tdaw&amp;hl=en">TouchDAW</a> 
+and <a href="https://swampyankeesound.com/touchdaw.html">this guide</a> to setting it up.
+I can’t say I was overjoyed with the results - I eventually went back to using
+a mouse to control the mixer. That may have been partly due to the fact that I 
+was working on the opposite side of the house from the WiFi access point. All 
+the same, I like the promise of the Open Stage Control protocols, but I don’t 
+think the current libre technology fulfills that promise just yet.</p>
+<h3 id="publishing">Publishing</h3>
+<p>I published all the finished tracks to a bucket in Amazon S3, which I made 
+public so all the singers could download what they needed. Maintaining the 
+index pages for all the parts got tedious as I uploaded new tracks, so I 
+ended up maintaining those in Markdown, and using a little script to 
+render them to HTML and sync a folder on my laptop to the S3 bucket. From 
+there, it was easy to send links via email or other means.</p>
+<p>One little gotcha with using S3, though: be sure to set the metadata on
+each file with <code>Content-Disposition: attachment</code>, so that web browsers know
+to download the file to disk instead of playing it in the browser.</p>
+<p>So there it is, an updated round-up of this project’s technology choices. I 
+hope it’s been helpful!</p>
+  </div>
+</article>
+        </section>
+<div class="clearfix"></div>
+<footer class="site-footer txt-center">
+  <hr>
+  <ul class="social">
+        <li><a href="" target="_blank"><i class="icon icon-"></i></a></li>
+        <li><a href="http://github.com/lucaswilric" target="_blank"><i class="icon icon-github"></i></a></li>
+  </ul>
+  <small>&copy; 2020 All rights reserved. Made with <a href="http://jekyllrb.com" target="_blank">Jekyll</a> and <i class="icon icon-heart"></i></small>
+  <small>by <a href="https://www.lucasrichter.id.au/">Lucas Wilson-Richter</a>, with thanks to <a href="http://nandomoreira.me" target="_blank">nandomoreira.me</a>.</small>
+</footer>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> Running a Docker container as a non root user | Lucas Wilson-Richter</title>
+<meta name="description" content="Running a Docker container as a non-root user">
+<meta name="keywords" content="docker sudo docker-compose">
+<link rel="stylesheet" href="/css/main.css">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="theme-color" content="#2ecc71">
+<link rel="canonical" href="https://lucasrichter.id.au/running-a-docker-container-as-a-non-root-user">
+<link rel="alternate" type="application/rss+xml" title="Lucas Wilson-Richter" href="https://lucasrichter.id.au/feed.xml" />
+  </head>
+  <body class="single">
+    <main class="container">
+        <header class="site-header">
+  <div class="container txt-center">
+    <nav class="navbar">
+      <ul>
+        <li><a href="/">home</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/about">about</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/feed.xml" target="_blank"><i class="icon icon-feed"></i> feed</a></li>
+      </ul>
+    </nav>
+    <a href="/" class="author-thumb">
+      <img src="/images/author.jpg" alt="Author thumbnail" class="dot">
+    </a>
+    <h1>Lucas Wilson-Richter</h1>
+    <hr class="hr">
+  </div>
+</header>
+        <section class="main-content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">Running a Docker container as a non root user</h1>
+    <p class="post-meta">Apr 26, 2020</p>
+  </header>
+  <div class="post-content">
+    <p><a href="https://www.redbubble.com/people/threewisefrogs/works/24847576-containerbow"><img src="/images/containerbow.jpg" alt="&quot;Containerbow&quot; by Michael Phillips Photography" /></a></p>
+<p>I originally published this post on
+<a href="https://medium.com/redbubble/running-a-docker-container-as-a-non-root-user-7d2e00f8ee15">Medium</a>.
+I think the ability to publish and keep control of one’s own work is one of the
+Internet’s most powerful benefits, so I’ve also posted it here, just on general
+principle.</p>
+<h2 id="the-problem-docker-writes-files-as-root">The Problem: Docker writes files as <code>root</code></h2>
+<p>Sometimes, when we run builds in Docker containers, the build creates files in a
+folder that’s mounted into the container from the host (e.g. the source code
+directory). This can cause us pain, because those files will be owned by the
+<code>root</code> user. When an ordinary user tries to clean those files up when preparing
+for the next build (for example by using <code>git clean</code>), they get an error and our
+build fails.</p>
+<p>There are a few ways we could deal with this problem:</p>
+<ul>
+  <li>We could try to prevent the build from creating any files, but that’s very
+limiting  -  we lose the ability to generate assets, or write any data to the
+disk. This is definitely too restrictive to solve the problem in a way that I
+could use with any build.</li>
+  <li>We could tell Git to ignore the affected files, but that carries the risk that
+they’ll hang around in the file system and have an effect on future builds.
+We’ve encountered that problem in the past at Redbubble, so we are wary about
+letting that happen again.</li>
+  <li>We could clean up the files at the end of the build, while we’re still running
+our Dockerised process. But that would require us to implement lots of error
+trapping logic to ensure the cleanup happens, but still exit the build with the
+correct result.</li>
+</ul>
+<p>It would be more elegant if we could simply create files in a way that allows
+ordinary users to delete them. For example, we could tell Docker to run as an
+ordinary user instead of root.</p>
+<h2 id="time-to-be-someone-else">Time to be someone else</h2>
+<p>Fortunately, <code>docker run</code> gives us a way to do this: the <code>--user</code> parameter.
+We’re going to use it to specify the user ID (UID) and group ID (GID) that
+Docker should use. This works because Docker containers all share the same
+kernel, and therefore the same list of UIDs and GIDs, even if the associated
+usernames are not known to the containers (more on that later).</p>
+<p>To run our asset build, we could use a command something like this:</p>
+<pre>
+  docker container run --rm -it \
+    -v $(app):/app \                          # Mount the source code
+    --workdir /app \                          # Set the working dir
+    --user 1000:1000 \                        # Run as the given user
+    my-docker/my-build-environment:latest \   # Our build env image
+    make assets                               # ... and the command!
+</pre>
+<p>This will tell Docker to run its processes with user ID 1000 and group ID 1000.
+That will mean that any files created by that process also belong to the user
+with ID 1000.</p>
+<h2 id="but-i-just-want-to-beme">But I just want to be me!</h2>
+<p>But what if we don’t know the current user’s ID? Is there some way to
+automatically discover that?</p>
+<p>There is: <code>id</code> is a program for finding out exactly this information. We can use
+it with the <code>-u</code> switch to get the UID, and the <code>-g</code> switch to get the GID. So
+instead of setting <code>--user 1000:1000</code>, we could use subshells to set <code>--user
+$(id -u):$(id -g)</code>. That way, we can always use the current user’s UID and GID.</p>
+<h2 id="docker-compose">docker-compose</h2>
+<p>We often like to run our tests and things using <code>docker-compose</code>, so that we can
+spin up any required services as needed - databases and so on. So wouldn’t it be
+nice if we could do this with <code>docker-compose</code> as well? Unfortunately, we can’t
+use subshells in a compose file  -  it’s not a supported part of the format.
+Lucky for us, we can insert environment variables. So if we have a
+<code>docker-compose.yml</code> like this:</p>
+<pre>
+  # This is an abbreviated example docker-compose.yml
+  version: '3.3'
+  services:
+    rspec:
+      image: my-docker/my-build-environment:latest
+      environment:
+        - RAILS_ENV=test
+      command: ["make", "assets"]
+      # THIS BIT!!!1!
+      user: ${CURRENT_UID}
+      volumes:
+        - .:/app
+</pre>
+<p>We could use a little bash to set that variable and start <code>docker-compose</code>:</p>
+<pre>
+CURRENT_UID=$(id -u):$(id -g) docker-compose up
+</pre>
+<p>Et voila! Our Dockerised script will create files as if it were the host user!</p>
+<h2 id="gotchas">Gotchas</h2>
+<h3 id="your-user-will-be-home-less">Your user will be $HOME-less</h3>
+<p>What we’re actually doing here is asking our Docker container to do things using
+the ID of a user it knows nothing about, and that creates some complications.
+Namely, it means that the user is missing some of the things we’ve learned to
+simply expect users to have  -  things like a home directory. This can be
+troublesome, because it means that all the things that live in <code>$HOME</code>  -
+ temporary files, application settings, package caches  -  now have nowhere to
+live. The containerised process just has no way to know where to put them.</p>
+<p>This can impact us when we’re trying to do user-specific things. We found that
+it caused problems using <code>gem install</code> (though using Bundler is OK), or running
+code that relies on <code>ENV['HOME']</code>. So it may mean that you need to make some
+adjustments if you do either of those things.</p>
+<h3 id="your-user-will-be-nameless-too">Your user will be nameless, too</h3>
+<p>It also turns out that we can’t easily share usernames between a Docker host and
+its containers. That’s why we can’t just use <code>docker run --user=$(whoami)</code>  -
+ the container doesn’t know about your username. It can only find out about your
+user by its UID.</p>
+<p>That means that when you run <code>whoami</code> inside your container, you’ll get a result
+like I have no name!. That’s entertaining, but if your code relies on knowing
+your username, you might get some confusing results.</p>
+<h2 id="wrapping-up">Wrapping up</h2>
+<p>We now have a way to use <code>docker run</code> and <code>docker-compose</code> to create files,
+without having to use <code>sudo</code> to clean them up!</p>
+<p>Happy building!</p>
+  </div>
+</article>
+        </section>
+<div class="clearfix"></div>
+<footer class="site-footer txt-center">
+  <hr>
+  <ul class="social">
+        <li><a href="" target="_blank"><i class="icon icon-"></i></a></li>
+        <li><a href="http://github.com/lucaswilric" target="_blank"><i class="icon icon-github"></i></a></li>
+  </ul>
+  <small>&copy; 2020 All rights reserved. Made with <a href="http://jekyllrb.com" target="_blank">Jekyll</a> and <i class="icon icon-heart"></i></small>
+  <small>by <a href="https://www.lucasrichter.id.au/">Lucas Wilson-Richter</a>, with thanks to <a href="http://nandomoreira.me" target="_blank">nandomoreira.me</a>.</small>
+</footer>
+    </main>
+  </body>
+</html>

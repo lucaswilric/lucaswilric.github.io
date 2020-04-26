@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> LiveCD trouble with Ubuntu 9.10 (Karmic Koala) | Lucas Wilson-Richter</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link rel="stylesheet" href="/css/main.css">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="theme-color" content="#2ecc71">
+<link rel="canonical" href="https://lucasrichter.id.au/2009/12/26/livecd-trouble-with-ubuntu-910-karmic-koala.html">
+<link rel="alternate" type="application/rss+xml" title="Lucas Wilson-Richter" href="https://lucasrichter.id.au/feed.xml" />
+  </head>
+  <body class="single">
+    <main class="container">
+        <header class="site-header">
+  <div class="container txt-center">
+    <nav class="navbar">
+      <ul>
+        <li><a href="/">home</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/about">about</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/feed.xml" target="_blank"><i class="icon icon-feed"></i> feed</a></li>
+      </ul>
+    </nav>
+    <a href="/" class="author-thumb">
+      <img src="/images/author.jpg" alt="Author thumbnail" class="dot">
+    </a>
+    <h1>Lucas Wilson-Richter</h1>
+    <hr class="hr">
+  </div>
+</header>
+        <section class="main-content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">LiveCD trouble with Ubuntu 9.10 (Karmic Koala)</h1>
+    <p class="post-meta">Dec 26, 2009</p>
+  </header>
+  <div class="post-content">
+    <p>
+  I replaced the guts of my machine recently (motherboard, CPU, RAM, video) and, having done this, my Ubuntu Intrepid install wouldn't work, because the kernel didn't support the new hardware. So I decided I'd install the latest version (9.10, Karmic Koala) to get a more recent kernel, and hopefully some other goodies. Downloaded the LiveCD on my laptop, burnt a disk, slipped it in the drive, and off we went.
+  </p>
+<p>
+  Presented with the typical startup screen, I chose to Install Ubuntu. But partway through the boot process, I was presented with a message to  the effect that there wasn't anything to boot. I think the exact words were <q>Unable to find live filesystem to boot.</q> I googled and struggled for a few hours, and then thought of something.
+  </p>
+<p>
+  My motherboard has a legacy IDE interface, which both my hard drive and my DVD drive are currently plugged into (having replaced everything else, my funds didn't stretch so far as replacing those). It turns out that the LiveCD doesn't do so well at noticing bootable images on the IDE interface.
+  </p>
+<p>
+  What did I do? I plugged in a USB DVD drive I had lying around. Worked like a charm, after I fiddled around in BIOS to make sure of the boot order.
+  </p>
+<p>
+  The moral of the story is: well, I don't quite know. But probably something like "don't assume any one thing is working correctly."
+  </p>
+  </div>
+</article>
+        </section>
+<div class="clearfix"></div>
+<footer class="site-footer txt-center">
+  <hr>
+  <ul class="social">
+        <li><a href="" target="_blank"><i class="icon icon-"></i></a></li>
+        <li><a href="http://github.com/lucaswilric" target="_blank"><i class="icon icon-github"></i></a></li>
+  </ul>
+  <small>&copy; 2020 All rights reserved. Made with <a href="http://jekyllrb.com" target="_blank">Jekyll</a> and <i class="icon icon-heart"></i></small>
+  <small>by <a href="https://www.lucasrichter.id.au/">Lucas Wilson-Richter</a>, with thanks to <a href="http://nandomoreira.me" target="_blank">nandomoreira.me</a>.</small>
+</footer>
+    </main>
+  </body>
+</html>

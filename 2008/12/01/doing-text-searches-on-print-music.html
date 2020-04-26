@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> Doing text searches on print music | Lucas Wilson-Richter</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link rel="stylesheet" href="/css/main.css">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="theme-color" content="#2ecc71">
+<link rel="canonical" href="https://lucasrichter.id.au/2008/12/01/doing-text-searches-on-print-music.html">
+<link rel="alternate" type="application/rss+xml" title="Lucas Wilson-Richter" href="https://lucasrichter.id.au/feed.xml" />
+  </head>
+  <body class="single">
+    <main class="container">
+        <header class="site-header">
+  <div class="container txt-center">
+    <nav class="navbar">
+      <ul>
+        <li><a href="/">home</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/about">about</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/feed.xml" target="_blank"><i class="icon icon-feed"></i> feed</a></li>
+      </ul>
+    </nav>
+    <a href="/" class="author-thumb">
+      <img src="/images/author.jpg" alt="Author thumbnail" class="dot">
+    </a>
+    <h1>Lucas Wilson-Richter</h1>
+    <hr class="hr">
+  </div>
+</header>
+        <section class="main-content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">Doing text searches on print music</h1>
+    <p class="post-meta">Dec 1, 2008</p>
+  </header>
+  <div class="post-content">
+    <p>I’ve been playing around with <a href="http://projects.gnome.org/tracker/">Tracker</a> (the Linux text search tool) this morning, because I’ve just received a bunch of sheet music in PDF form, and I wanted to be able to search for songs. And the file naming system used by the providers of these PDFs sucks major arse. So using Tracker to index the songs so I can search for them by title (and, incidentally, lyrics) seemed like a pretty logical thing to do.</p>
+<p>But I want more. I want to be able to do this for my hard-copy music as well.</p>
+<p>My singing teacher does something like this. He has a dirty great spreadsheet with all the names and composers of all the sheet music he owns (as of the last time it was updated), to which he refers when he wants to find something. This seems very kludgy to me, mostly because he refers to the hard copy. And that takes up nearly a ream of A4 paper.</p>
+<p>So how can I get all that metadata into my PC without having to type it all in? Excessive scanning is also out because I’m too lazy.</p>
+<p>The solution in my mind at the moment is scanning just the metadata: the title of the song, the composer and show/opera if they’re there, and the book and page on which it appears. In short, the contents page of any given music book. If I scan and OCR those to a sufficient degree of accuracy, I should be able to find what I’m looking for (assuming I have it). Especially if I can scan it into PDF format with the OCR text included. That way, the original image is still there for me to read, even if the computer can’t. So if I’m looking for the song <em>Piano Man</em>, but the OCR hasn’t recognised it, I can search for something like <em>Billy Joel</em> and eyeball the results. Less efficient, to be sure, but it’s only a backup option.</p>
+<p>Now obviously this approach doesn’t work so well for searching on lyrics. For that to work, I’d need to scan every page of music I own, and that just doesn’t scale. The only alternative would be to get access to an existing repository of song lyrics, and get the title from there. Now, where would I find such a repository?</p>
+<p>Wait a minute… <strong>the Internet!</strong></p>
+<p>Here’s a brief, half-baked outline:</p>
+<ol>
+  <li>Search Google (or a more music-specific resource) for the lyrics in question</li>
+  <li>Grab the song title from the results. How, I don’t know just yet, but &lt;title&gt; tags seem like a likely option.</li>
+  <li>Search on my PC using Tracker for the title I’ve found.</li>
+  <li>???</li>
+  <li><strong>Profit!</strong></li>
+</ol>
+<p>One more idea for the pile.</p>
+  </div>
+</article>
+        </section>
+<div class="clearfix"></div>
+<footer class="site-footer txt-center">
+  <hr>
+  <ul class="social">
+        <li><a href="" target="_blank"><i class="icon icon-"></i></a></li>
+        <li><a href="http://github.com/lucaswilric" target="_blank"><i class="icon icon-github"></i></a></li>
+  </ul>
+  <small>&copy; 2020 All rights reserved. Made with <a href="http://jekyllrb.com" target="_blank">Jekyll</a> and <i class="icon icon-heart"></i></small>
+  <small>by <a href="https://www.lucasrichter.id.au/">Lucas Wilson-Richter</a>, with thanks to <a href="http://nandomoreira.me" target="_blank">nandomoreira.me</a>.</small>
+</footer>
+    </main>
+  </body>
+</html>

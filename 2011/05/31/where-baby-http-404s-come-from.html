@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> Where baby HTTP 404s come from | Lucas Wilson-Richter</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link rel="stylesheet" href="/css/main.css">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="theme-color" content="#2ecc71">
+<link rel="canonical" href="https://lucasrichter.id.au/2011/05/31/where-baby-http-404s-come-from.html">
+<link rel="alternate" type="application/rss+xml" title="Lucas Wilson-Richter" href="https://lucasrichter.id.au/feed.xml" />
+  </head>
+  <body class="single">
+    <main class="container">
+        <header class="site-header">
+  <div class="container txt-center">
+    <nav class="navbar">
+      <ul>
+        <li><a href="/">home</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/about">about</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/feed.xml" target="_blank"><i class="icon icon-feed"></i> feed</a></li>
+      </ul>
+    </nav>
+    <a href="/" class="author-thumb">
+      <img src="/images/author.jpg" alt="Author thumbnail" class="dot">
+    </a>
+    <h1>Lucas Wilson-Richter</h1>
+    <hr class="hr">
+  </div>
+</header>
+        <section class="main-content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">Where baby HTTP 404s come from</h1>
+    <p class="post-meta">May 31, 2011</p>
+  </header>
+  <div class="post-content">
+    <p>DISCLAIMER: I maintain the code that I refer to in this post, but I didn’t <em>write</em> the code.</p>
+<p>I’ve been hunting HTTP 404 errors (that’s the “File Not Found” variety), and today I came across a bit of a puzzler. The non-existent image files were being referred to by a stylesheet as part of a CSS <code>background:</code> instruction, but the rule that contained the instruction was never invoked. That is, the rule was for a class name that was never used.</p>
+<p>How the hell was I getting these image requests if the code that started the requests was never being used?</p>
+<p>Then I noticed that the errors were coming from just a few different user agents. And they all had something about them…</p>
+<ul>
+  <li>LG-GW305/V100 Obigo/WAP2.0 Profile/MIDP-2.1 Configuration/CLDC-1.1 UNTRUSTED/1.0 lg-gw305</li>
+  <li>Nokia2730c-1/2.0 (10.47) Profile/MIDP-2.1 Configuration/CLDC-1.1 nokia2730c-1/UC Browser7.7.1.88/70/352</li>
+  <li>Nokia5130c-2/2.0 (07.95) Profile/MIDP-2.1 Configuration/CLDC-1.1 nokia5130c-2/UC Browser7.6.1.82/70/352 UNTRUSTED/1.0</li>
+  <li>Nokia5330-1d/5.0 (06.85) Profile/MIDP-2.1 Configuration/CLDC-1.1 nokia5330-1d</li>
+  <li>Nokia5530/UC Browser7.6.1.82/50/352</li>
+  <li>Nokia5800 XpressMusic/UC Browser7.7.1.88/50/352</li>
+  <li>NokiaC3-00/5.0 (04.45) Profile/MIDP-2.1 Configuration/CLDC-1.1 nokiac3-00/UC Browser7.7.1.88/69/352 UNTRUSTED/1.0</li>
+  <li>NokiaC3-00/5.0 (04.45) Profile/MIDP-2.1 Configuration/CLDC-1.1 Opera/9.60 (J2ME/MIDP;Opera Mini/4.2.13337Mod.by.CHIZZY/503; U; en)Presto/2.2.0 UNTRUSTED/1.0</li>
+  <li>NokiaC3-00/5.0 (04.60) Profile/MIDP-2.1 Configuration/CLDC-1.1 nokiac3-00 UNTRUSTED/1.0</li>
+  <li>NokiaC3-00/5.0 (07.20) Profile/MIDP-2.1 Configuration/CLDC-1.1 nokiac3-00 UNTRUSTED/1.0</li>
+</ul>
+<p>See it? That’s right, they all come from mobile browsers. This puzzled me a bit, until I realised that it might be something you’d do to speed up the user experience if you knew they’d be on a slow connection (and you didn’t care if they downloaded heaps of data they didn’t need).</p>
+<p>So here’s the piece of knowledge I want to add to the internet (he said, arrogantly assuming it wasn’t there already): <strong>Mobile browsers prefetch images from stylesheets as an optimisation in the face of low speed connections.</strong></p>
+<p>You’re welcome.</p>
+  </div>
+</article>
+        </section>
+<div class="clearfix"></div>
+<footer class="site-footer txt-center">
+  <hr>
+  <ul class="social">
+        <li><a href="" target="_blank"><i class="icon icon-"></i></a></li>
+        <li><a href="http://github.com/lucaswilric" target="_blank"><i class="icon icon-github"></i></a></li>
+  </ul>
+  <small>&copy; 2020 All rights reserved. Made with <a href="http://jekyllrb.com" target="_blank">Jekyll</a> and <i class="icon icon-heart"></i></small>
+  <small>by <a href="https://www.lucasrichter.id.au/">Lucas Wilson-Richter</a>, with thanks to <a href="http://nandomoreira.me" target="_blank">nandomoreira.me</a>.</small>
+</footer>
+    </main>
+  </body>
+</html>

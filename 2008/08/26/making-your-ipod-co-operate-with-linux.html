@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> Making your iPod co-operate with Linux | Lucas Wilson-Richter</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link rel="stylesheet" href="/css/main.css">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="theme-color" content="#2ecc71">
+<link rel="canonical" href="https://lucasrichter.id.au/2008/08/26/making-your-ipod-co-operate-with-linux.html">
+<link rel="alternate" type="application/rss+xml" title="Lucas Wilson-Richter" href="https://lucasrichter.id.au/feed.xml" />
+  </head>
+  <body class="single">
+    <main class="container">
+        <header class="site-header">
+  <div class="container txt-center">
+    <nav class="navbar">
+      <ul>
+        <li><a href="/">home</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/about">about</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/feed.xml" target="_blank"><i class="icon icon-feed"></i> feed</a></li>
+      </ul>
+    </nav>
+    <a href="/" class="author-thumb">
+      <img src="/images/author.jpg" alt="Author thumbnail" class="dot">
+    </a>
+    <h1>Lucas Wilson-Richter</h1>
+    <hr class="hr">
+  </div>
+</header>
+        <section class="main-content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">Making your iPod co-operate with Linux</h1>
+    <p class="post-meta">Aug 26, 2008</p>
+  </header>
+  <div class="post-content">
+    <p>I recently bought a new iPod Nano (3rd generation) and I decided last night to get it working with my Ubuntu Gutsy box. It took me way too long, so I decided I should spend more time documenting the process to make it worthwhile, so that you might not have to spend so much time on it.</p>
+<p>Firstly, the main points:</p>
+<ul>
+  <li><em>You can only do a “factory reset” of an iPod using iTunes.</em> Windows or Mac version, that doesn’t matter.</li>
+  <li><em>If you reset your iPod on a Mac, you can’t write to it on Windows.</em> Or Linux, unless you want to go to a great deal of trouble. This is because Macs reset iPods using the default Mac filesystem (HFS+), which Windows will have nothing to do with, and which Linux will read, but not write (You can enable writing, but you will need to recompile your kernel, which is not an easy thing for most).</li>
+  <li><em>Apple does not support the use of iPods on Linux.</em> Tough.</li>
+</ul>
+<p>So. The young gentleman from whom I purchased this iPod had loaded up a bunch of his own music collection to the device using his MacBook. My machine’s kernel doesn’t have HFS+ writing enabled, and I didn’t feel like recompiling it. Having googled extensively to find this out, and having tried for a couple of hours without success to get HFS+ write support without recompiling, I decided that using the HFS+ file system on my iPod was really not for me.</p>
+<p>The alternative? Go for the Windows option (which uses the FAT32 file system, which Linux supports in every incarnation you’re likely to come across in a PC). So I fired up my Windows virtual machine, downloaded the iTunes installer (a couple of times, due to a failure half-way through the first download), and ran it, only to discover that my VM software (VirtualBox OSE, in case you’re interested) doesn’t allow you to share your USB ports with the virtual machine. iTunes couldn’t talk to my iPod. Bugger. An hour wasted.</p>
+<p>Then I had a “ray of light” moment. I’d borrow the family’s commonly-held Windows laptop. It was about midnight by this stage, ergo nobody was using it, so all was cool. I watched some IT Crowd while waiting for the download (again), installed, plugged in the iPod, et voila, I had an install in progress. All was well.</p>
+<p>Then I installed GTKpod (about the easiest activity of the evening), picked out a few directories to transfer over, and left the machine to it while I went to bed. I was <strong>not</strong> going to wait for it.</p>
+<ul>
+  <li>Lesson: If you want an iPod that works across platforms, for the love God, use Windows to restore it!*</li>
+</ul>
+  </div>
+</article>
+        </section>
+<div class="clearfix"></div>
+<footer class="site-footer txt-center">
+  <hr>
+  <ul class="social">
+        <li><a href="" target="_blank"><i class="icon icon-"></i></a></li>
+        <li><a href="http://github.com/lucaswilric" target="_blank"><i class="icon icon-github"></i></a></li>
+  </ul>
+  <small>&copy; 2020 All rights reserved. Made with <a href="http://jekyllrb.com" target="_blank">Jekyll</a> and <i class="icon icon-heart"></i></small>
+  <small>by <a href="https://www.lucasrichter.id.au/">Lucas Wilson-Richter</a>, with thanks to <a href="http://nandomoreira.me" target="_blank">nandomoreira.me</a>.</small>
+</footer>
+    </main>
+  </body>
+</html>

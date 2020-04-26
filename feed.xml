@@ -1,0 +1,616 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Lucas Wilson-Richter</title>
+    <description></description>
+    <link>https://lucasrichter.id.au/</link>
+    <atom:link href="https://lucasrichter.id.au/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Sun, 26 Apr 2020 12:48:20 +1000</pubDate>
+    <lastBuildDate>Sun, 26 Apr 2020 12:48:20 +1000</lastBuildDate>
+    <generator>Jekyll v2.5.3</generator>
+    
+      <item>
+        <title>Running a Docker container as a non root user</title>
+        <description>&lt;p&gt;&lt;a href=&quot;https://www.redbubble.com/people/threewisefrogs/works/24847576-containerbow&quot;&gt;&lt;img src=&quot;/images/containerbow.jpg&quot; alt=&quot;&amp;quot;Containerbow&amp;quot; by Michael Phillips Photography&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;I originally published this post on
+&lt;a href=&quot;https://medium.com/redbubble/running-a-docker-container-as-a-non-root-user-7d2e00f8ee15&quot;&gt;Medium&lt;/a&gt;.
+I think the ability to publish and keep control of one’s own work is one of the
+Internet’s most powerful benefits, so I’ve also posted it here, just on general
+principle.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-problem-docker-writes-files-as-root&quot;&gt;The Problem: Docker writes files as &lt;code&gt;root&lt;/code&gt;&lt;/h2&gt;
+
+&lt;p&gt;Sometimes, when we run builds in Docker containers, the build creates files in a
+folder that’s mounted into the container from the host (e.g. the source code
+directory). This can cause us pain, because those files will be owned by the
+&lt;code&gt;root&lt;/code&gt; user. When an ordinary user tries to clean those files up when preparing
+for the next build (for example by using &lt;code&gt;git clean&lt;/code&gt;), they get an error and our
+build fails.&lt;/p&gt;
+
+&lt;p&gt;There are a few ways we could deal with this problem:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We could try to prevent the build from creating any files, but that’s very
+limiting  -  we lose the ability to generate assets, or write any data to the
+disk. This is definitely too restrictive to solve the problem in a way that I
+could use with any build.&lt;/li&gt;
+  &lt;li&gt;We could tell Git to ignore the affected files, but that carries the risk that
+they’ll hang around in the file system and have an effect on future builds.
+We’ve encountered that problem in the past at Redbubble, so we are wary about
+letting that happen again.&lt;/li&gt;
+  &lt;li&gt;We could clean up the files at the end of the build, while we’re still running
+our Dockerised process. But that would require us to implement lots of error
+trapping logic to ensure the cleanup happens, but still exit the build with the
+correct result.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It would be more elegant if we could simply create files in a way that allows
+ordinary users to delete them. For example, we could tell Docker to run as an
+ordinary user instead of root.&lt;/p&gt;
+
+&lt;h2 id=&quot;time-to-be-someone-else&quot;&gt;Time to be someone else&lt;/h2&gt;
+
+&lt;p&gt;Fortunately, &lt;code&gt;docker run&lt;/code&gt; gives us a way to do this: the &lt;code&gt;--user&lt;/code&gt; parameter.
+We’re going to use it to specify the user ID (UID) and group ID (GID) that
+Docker should use. This works because Docker containers all share the same
+kernel, and therefore the same list of UIDs and GIDs, even if the associated
+usernames are not known to the containers (more on that later).&lt;/p&gt;
+
+&lt;p&gt;To run our asset build, we could use a command something like this:&lt;/p&gt;
+
+&lt;pre&gt;
+  docker container run --rm -it \
+    -v $(app):/app \                          # Mount the source code
+    --workdir /app \                          # Set the working dir
+    --user 1000:1000 \                        # Run as the given user
+    my-docker/my-build-environment:latest \   # Our build env image
+    make assets                               # ... and the command!
+&lt;/pre&gt;
+
+&lt;p&gt;This will tell Docker to run its processes with user ID 1000 and group ID 1000.
+That will mean that any files created by that process also belong to the user
+with ID 1000.&lt;/p&gt;
+
+&lt;h2 id=&quot;but-i-just-want-to-beme&quot;&gt;But I just want to be me!&lt;/h2&gt;
+
+&lt;p&gt;But what if we don’t know the current user’s ID? Is there some way to
+automatically discover that?&lt;/p&gt;
+
+&lt;p&gt;There is: &lt;code&gt;id&lt;/code&gt; is a program for finding out exactly this information. We can use
+it with the &lt;code&gt;-u&lt;/code&gt; switch to get the UID, and the &lt;code&gt;-g&lt;/code&gt; switch to get the GID. So
+instead of setting &lt;code&gt;--user 1000:1000&lt;/code&gt;, we could use subshells to set &lt;code&gt;--user
+$(id -u):$(id -g)&lt;/code&gt;. That way, we can always use the current user’s UID and GID.&lt;/p&gt;
+
+&lt;h2 id=&quot;docker-compose&quot;&gt;docker-compose&lt;/h2&gt;
+
+&lt;p&gt;We often like to run our tests and things using &lt;code&gt;docker-compose&lt;/code&gt;, so that we can
+spin up any required services as needed - databases and so on. So wouldn’t it be
+nice if we could do this with &lt;code&gt;docker-compose&lt;/code&gt; as well? Unfortunately, we can’t
+use subshells in a compose file  -  it’s not a supported part of the format.
+Lucky for us, we can insert environment variables. So if we have a
+&lt;code&gt;docker-compose.yml&lt;/code&gt; like this:&lt;/p&gt;
+
+&lt;pre&gt;
+  # This is an abbreviated example docker-compose.yml
+  version: &#39;3.3&#39;
+  services:
+    rspec:
+      image: my-docker/my-build-environment:latest
+      environment:
+        - RAILS_ENV=test
+      command: [&quot;make&quot;, &quot;assets&quot;]
+      # THIS BIT!!!1!
+      user: ${CURRENT_UID}
+      volumes:
+        - .:/app
+&lt;/pre&gt;
+
+&lt;p&gt;We could use a little bash to set that variable and start &lt;code&gt;docker-compose&lt;/code&gt;:&lt;/p&gt;
+
+&lt;pre&gt;
+CURRENT_UID=$(id -u):$(id -g) docker-compose up
+&lt;/pre&gt;
+
+&lt;p&gt;Et voila! Our Dockerised script will create files as if it were the host user!&lt;/p&gt;
+
+&lt;h2 id=&quot;gotchas&quot;&gt;Gotchas&lt;/h2&gt;
+
+&lt;h3 id=&quot;your-user-will-be-home-less&quot;&gt;Your user will be $HOME-less&lt;/h3&gt;
+
+&lt;p&gt;What we’re actually doing here is asking our Docker container to do things using
+the ID of a user it knows nothing about, and that creates some complications.
+Namely, it means that the user is missing some of the things we’ve learned to
+simply expect users to have  -  things like a home directory. This can be
+troublesome, because it means that all the things that live in &lt;code&gt;$HOME&lt;/code&gt;  -
+ temporary files, application settings, package caches  -  now have nowhere to
+live. The containerised process just has no way to know where to put them.&lt;/p&gt;
+
+&lt;p&gt;This can impact us when we’re trying to do user-specific things. We found that
+it caused problems using &lt;code&gt;gem install&lt;/code&gt; (though using Bundler is OK), or running
+code that relies on &lt;code&gt;ENV[&#39;HOME&#39;]&lt;/code&gt;. So it may mean that you need to make some
+adjustments if you do either of those things.&lt;/p&gt;
+
+&lt;h3 id=&quot;your-user-will-be-nameless-too&quot;&gt;Your user will be nameless, too&lt;/h3&gt;
+
+&lt;p&gt;It also turns out that we can’t easily share usernames between a Docker host and
+its containers. That’s why we can’t just use &lt;code&gt;docker run --user=$(whoami)&lt;/code&gt;  -
+ the container doesn’t know about your username. It can only find out about your
+user by its UID.&lt;/p&gt;
+
+&lt;p&gt;That means that when you run &lt;code&gt;whoami&lt;/code&gt; inside your container, you’ll get a result
+like I have no name!. That’s entertaining, but if your code relies on knowing
+your username, you might get some confusing results.&lt;/p&gt;
+
+&lt;h2 id=&quot;wrapping-up&quot;&gt;Wrapping up&lt;/h2&gt;
+
+&lt;p&gt;We now have a way to use &lt;code&gt;docker run&lt;/code&gt; and &lt;code&gt;docker-compose&lt;/code&gt; to create files,
+without having to use &lt;code&gt;sudo&lt;/code&gt; to clean them up!&lt;/p&gt;
+
+&lt;p&gt;Happy building!&lt;/p&gt;
+</description>
+        <pubDate>Sun, 26 Apr 2020 11:54:21 +0000</pubDate>
+        <link>https://lucasrichter.id.au/running-a-docker-container-as-a-non-root-user</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/running-a-docker-container-as-a-non-root-user</guid>
+        
+        
+      </item>
+    
+      <item>
+        <title>Making practise tools for amateur musicals, Linux edition</title>
+        <description>&lt;p&gt;A couple of years ago, I was Musical Director for a 
+&lt;a href=&quot;/2017/04/23/making-practise-tools-for-amateur-musicals.html&quot;&gt;local musical theatre production&lt;/a&gt;. 
+This year, I got the opportunity to do something similar for a production of 
+Rodgers &amp;amp; Hammerstein’s &lt;em&gt;Cinderella&lt;/em&gt;, and I spent quite a bit of time making
+practise materials for the cast. In the intervening time, I switched from Mac to
+Linux for my personal machine, so I thought an update on the tools I used might 
+be in order.&lt;/p&gt;
+
+&lt;p&gt;There were a couple of differences in my objectives for this project. For
+example, rather than producing both scores and sing-along practice tracks as
+with the last project, I only needed to make the tracks in this case (what a 
+relief!).&lt;/p&gt;
+
+&lt;p&gt;That had an effect on the methods I chose to use when recording. When I was 
+making scores, getting note values exactly right was a high priority, so I used
+step recording for note input. That gave me the precision I needed for a score, 
+but was quite time consuming. Since I was only making the sing-along tracks for
+this latest project, I was able to play the score directly into the recording 
+(albeit in short sections, one hand at a time). You’ll also find that I don’t 
+mention any score engraving software this time around.&lt;/p&gt;
+
+&lt;h2 id=&quot;hardware&quot;&gt;Hardware&lt;/h2&gt;
+
+&lt;h3 id=&quot;system76-galago-laptop&quot;&gt;System76 Galago laptop&lt;/h3&gt;
+
+&lt;p&gt;System76 specialise in Linux laptops, customisable in almost every respect.
+Their 13-inch &lt;a href=&quot;https://system76.com/laptops/galago&quot;&gt;Galago&lt;/a&gt; model features 
+a HiDPI display, which I’m quite enjoying. The onboard audio, however, 
+leaves a bit to be desired when it comes to recording. The built-in headphone 
+and mic channels are both exposed to quite a bit of noise, which results in 
+substandard recordings, especially when you’re recording 4 vocal parts and 
+layering them together!&lt;/p&gt;
+
+&lt;p&gt;Hence, my next investment.&lt;/p&gt;
+
+&lt;h3 id=&quot;focusrite-scarlett-2i2-usb-audio-interface&quot;&gt;Focusrite Scarlett 2i2 USB audio interface&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://us.focusrite.com/usb-audio-interfaces/scarlett-2i2&quot;&gt;This little fellow&lt;/a&gt;
+cleared my line noise problems right up, and works with Linux (or at least 
+Ubuntu) out of the box.&lt;/p&gt;
+
+&lt;h3 id=&quot;shure-sm58-microphonehttpwwwshurecomamericasproductsmicrophonessmsm58-vocal-microphone&quot;&gt;&lt;a href=&quot;http://www.shure.com/americas/products/microphones/SM/sm58-vocal-microphone&quot;&gt;Shure SM58 microphone&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;A standard choice for an omnidirectional dynamic mic. No regrets here.&lt;/p&gt;
+
+&lt;h3 id=&quot;m-audio-keystation-49&quot;&gt;M-Audio Keystation 49&lt;/h3&gt;
+
+&lt;p&gt;This one hasn’t changed from the previous edition. I’m still pretty pleased with 
+it, and I’ve learned a little more about how to use it as well. Fortunately for
+me, it also works out of the box with both Mac and Linux.&lt;/p&gt;
+
+&lt;h2 id=&quot;software&quot;&gt;Software&lt;/h2&gt;
+
+&lt;h3 id=&quot;daw-ardour&quot;&gt;DAW: Ardour&lt;/h3&gt;
+
+&lt;p&gt;The Digital Audio Workstation (DAW) I chose is called &lt;a href=&quot;https://ardour.org/&quot;&gt;Ardour&lt;/a&gt;.
+I chose it mostly because it (a) connects with JACK easily, (b) is libre and
+free, and (c) seemed popular, and hence would have some degree of community 
+support if I got into trouble.&lt;/p&gt;
+
+&lt;p&gt;It served me well, though I was on a continuous learning curve through the
+entire process of recording about 20 tracks!&lt;/p&gt;
+
+&lt;h3 id=&quot;jack--qjackctl&quot;&gt;JACK &amp;amp; Qjackctl&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://jackaudio.org&quot;&gt;JACK&lt;/a&gt; (JACK Audio Connection Kit) does the job of
+connecting a system’s many audio inputs and outputs together. It can be a bit
+daunting to get started, but I found that 
+&lt;a href=&quot;http://libremusicproduction.com/articles/demystifying-jack-%E2%80%93-beginners-guide-getting-started-jack&quot;&gt;this guide&lt;/a&gt;
+really helped me understand what I was doing.&lt;/p&gt;
+
+&lt;h3 id=&quot;fluidsynth--qsynth&quot;&gt;FluidSynth &amp;amp; Qsynth&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://fluidsynth.org&quot;&gt;FluidSynth&lt;/a&gt; is a MIDI software synthesiser, which uses
+SoundFonts to turn MIDI signals into sounds.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://qsynth.sourceforge.io/&quot;&gt;Qsynth&lt;/a&gt; is a GUI for FluidSynth, which makes 
+it easier to manage.&lt;/p&gt;
+
+&lt;p&gt;I found these useful for when I wasn’t recording with Ardour (which manages its
+own FluidSynth), but still wanted to use the MIDI keyboard and hear what I was 
+playing.&lt;/p&gt;
+
+&lt;h3 id=&quot;a2jmidid&quot;&gt;a2jmidid&lt;/h3&gt;
+
+&lt;p&gt;So Ardour, FluidSynth and friends were all using JACK to communicate with one 
+another, and that was great. I faced a little challenge when I realised that my
+MIDI keyboard was sending signals on the older ALSA bus. A quick search revealed
+&lt;code&gt;a2jmidid&lt;/code&gt;, or the ALSA to JACK MIDI Daemon, which basically does what it says 
+on the tin: it takes MIDI signals from the ALSA bus and retransmits them over a 
+connection to JACK, and vice versa. Very handy.&lt;/p&gt;
+
+&lt;h3 id=&quot;foreman&quot;&gt;Foreman&lt;/h3&gt;
+
+&lt;p&gt;After a while, I got tired of starting all these different tools in sequence. 
+Occasionally I’d start them up in the wrong order, or I’d be running command 
+number 5 and suddenly realise that I’d made a mistake in command number 2. Super 
+frustrating.&lt;/p&gt;
+
+&lt;p&gt;Fortunately for me, I’d encountered a tool for a purpose very like this, in my
+work as a software engineer. &lt;a href=&quot;https://github.com/ddollar/foreman#foreman&quot;&gt;Foreman&lt;/a&gt;
+is a handy little utility for running a number of programs at the same time. To
+use it, you specify all the processes you want to run in a file named &lt;code&gt;Procfile&lt;/code&gt;.
+Foreman reads that file and starts the processes you ask for. It’s quite a simple
+tool, so it lacks (as far as I know) any features about getting those processes
+to communicate with each other. Fortunately, that’s what Jack is made for.&lt;/p&gt;
+
+&lt;h3 id=&quot;controlling-ardour-from-a-tablet-using-touchdaw-and-qmidinet&quot;&gt;Controlling Ardour from a tablet using TouchDAW and QMidiNet&lt;/h3&gt;
+
+&lt;p&gt;Once I’d recorded all my piano and vocal tracks (with some help from a couple of 
+very generous friends), it was time to mix. It turns out that controlling a mixer
+using a mouse or trackpad can be a tedious experience. To help with this, I 
+started looking into other ways of controlling Ardour, preferably using touch.&lt;/p&gt;
+
+&lt;p&gt;I tried out a few different tools, and none of them really satisfied. I got the 
+best results using &lt;a href=&quot;https://play.google.com/store/apps/details?id=de.humatic.tdaw&amp;amp;hl=en&quot;&gt;TouchDAW&lt;/a&gt; 
+and &lt;a href=&quot;https://swampyankeesound.com/touchdaw.html&quot;&gt;this guide&lt;/a&gt; to setting it up.
+I can’t say I was overjoyed with the results - I eventually went back to using
+a mouse to control the mixer. That may have been partly due to the fact that I 
+was working on the opposite side of the house from the WiFi access point. All 
+the same, I like the promise of the Open Stage Control protocols, but I don’t 
+think the current libre technology fulfills that promise just yet.&lt;/p&gt;
+
+&lt;h3 id=&quot;publishing&quot;&gt;Publishing&lt;/h3&gt;
+
+&lt;p&gt;I published all the finished tracks to a bucket in Amazon S3, which I made 
+public so all the singers could download what they needed. Maintaining the 
+index pages for all the parts got tedious as I uploaded new tracks, so I 
+ended up maintaining those in Markdown, and using a little script to 
+render them to HTML and sync a folder on my laptop to the S3 bucket. From 
+there, it was easy to send links via email or other means.&lt;/p&gt;
+
+&lt;p&gt;One little gotcha with using S3, though: be sure to set the metadata on
+each file with &lt;code&gt;Content-Disposition: attachment&lt;/code&gt;, so that web browsers know
+to download the file to disk instead of playing it in the browser.&lt;/p&gt;
+
+&lt;p&gt;So there it is, an updated round-up of this project’s technology choices. I 
+hope it’s been helpful!&lt;/p&gt;
+</description>
+        <pubDate>Tue, 31 Jul 2018 22:16:39 +0000</pubDate>
+        <link>https://lucasrichter.id.au/practise-tools-for-musicals-linux</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/practise-tools-for-musicals-linux</guid>
+        
+        <category>music</category>
+        
+        <category>software</category>
+        
+        <category>linux</category>
+        
+        <category>audio</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Making practise tools for amateur musicals</title>
+        <description>&lt;p&gt;Last year I served as the Musical Director for a local musical theatre production. My duties involved teaching the music to the cast so that they could perform from memory on stage, including harmony singing in up to 4 parts.&lt;/p&gt;
+
+&lt;p&gt;Because the community group I work with (the &lt;a href=&quot;http://dvsingers.org/&quot;&gt;Diamond Valley Singers&lt;/a&gt;) has a policy of not auditioning the chorus for our shows, we get people of all skill levels joining the cast. Some people have already developed the skills they need to learn the music and sing in parts from memory, while acting and dancing at the same time. Others haven’t, and need as much help as the creative team con provide to get them ready for performance. So I spent quite a lot of time preparing materials to help people practise, including more readable scores and practise backings for all the vocal parts.&lt;/p&gt;
+
+&lt;p&gt;Here’s a little run-down of the tools I used to put these materials together. All the software is free, or comes packaged with Mac OSX. Hardware is another story, but investing in even a modest MIDI keyboard made a huge difference to the amount of effort required to get everything done.&lt;/p&gt;
+
+&lt;h1 id=&quot;musescore&quot;&gt;MuseScore&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://musescore.org/&quot;&gt;MuseScore&lt;/a&gt; is an open source music editor, which has all the same basic features as Sibelius. More advanced features such as music scanning are not included, but the price is right, particularly for an amateur like me. The vital features for me were:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Input from a MIDI keyboard. This speeds up input in a huge way, especially as scanning wasn’t an option. I used an &lt;a href=&quot;http://www.m-audio.com/products/view/keystation-49&quot;&gt;M-Audio KeyStation 49&lt;/a&gt;, which was exactly the right size for my desk, and connects easily via USB.&lt;/li&gt;
+  &lt;li&gt;WYSIWYG (What You See Is What You Get) score editing. Believe it or not, not every music editing program has this feature (I’m looking at you, &lt;a href=&quot;http://lilypond.org/&quot;&gt;Lilypond&lt;/a&gt;).&lt;/li&gt;
+  &lt;li&gt;Plain-text output in an open format (MusicXML). This was an important feature for me because I wanted to use the programming tools I know and love, to help me with things like version control (which I’ll go into more later). MusicXML is not MuseScore’s default format, but it beats the pants off any binary format for my purposes.&lt;/li&gt;
+  &lt;li&gt;Pretty good help from the community. After consulting Google, I was able to get solutions to quite a few problems from the MuseScore &lt;a href=&quot;https://musescore.org/en/forum&quot;&gt;user forums&lt;/a&gt;.&lt;/li&gt;
+  &lt;li&gt;Finally, PDF and MIDI exports. This allowed me to turn the scores I was working on into backings for the practise recordings. I could also be certain that those backings would match the score exactly. Again, a pretty standard feature for this kind of software, but I mention it because it was especially important for this project.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;git&quot;&gt;Git&lt;/h1&gt;
+
+&lt;p&gt;I’m a software engineer by profession, and I like to apply programming tools to my other pursuits because I know how to use them, and they help me approach problems in ways I understand. I used Git to version control my scores, so I knew that if I completely messed things up, I could always revert to a previously saved version. At the end of the process, I also got a nice little story created by the sequence of commit messages I’d written. Some day, a musical archaeologist will be able to follow my creative process step by step, because of those records.&lt;/p&gt;
+
+&lt;p&gt;I should point out that I only used Git’s most basic features. I did most of my work on a single branch, and didn’t do any merging at all. Change tracking and save points were all I needed in this case. Git has some great features to help with integrating changes amongst a team, but I had no need for them this time, as I was the only one contributing.&lt;/p&gt;
+
+&lt;p&gt;Using Git was only practical because I could get MuseScore to output my work in a plain text format, in this case MusicXML. It’s very hard to do version control in a space-efficient way for binary files, as it’s a lot easier to compress plain-text files. Even if plain-text files are less space efficient individually, they compress much better in large numbers.&lt;/p&gt;
+
+&lt;h1 id=&quot;tascam-stereo-recorder&quot;&gt;Tascam stereo recorder&lt;/h1&gt;
+
+&lt;p&gt;Once I had my scores and backings done, I was ready to record voice parts. I dubbed these over the top of the backings to help my singers practise, since as I mentioned, I was working with singers of all skill levels. I used a Tascam portable stereo recorder mounted on a tripod to record the parts, singing the bass and tenor parts myself and calling in a couple of friends to help me with the soprano and alto parts.&lt;/p&gt;
+
+&lt;h1 id=&quot;audacity&quot;&gt;Audacity&lt;/h1&gt;
+
+&lt;p&gt;The one thing that wasn’t ideal for me about the Tascam recorder was that I
+couldn’t figure out how to record at a decent volume. Even though my singing voice is quite loud and I was standing right in front of the recorder, the resulting file was &lt;em&gt;very&lt;/em&gt; quiet. I suspect it’s because the microphones can handle very loud sounds (e.g. a symphony orchestra playing fortissimo), and even my loud voice is quiet by comparison. Anyway, I used &lt;a href=&quot;http://www.audacityteam.org/&quot;&gt;Audacity&lt;/a&gt; to amplify the raw audio files before I combined them with other sounds.&lt;/p&gt;
+
+&lt;h1 id=&quot;garageband&quot;&gt;GarageBand&lt;/h1&gt;
+
+&lt;p&gt;Once all the parts were recorded and amplified, I used Apple’s GarageBand to mix everything together. With GarageBand I was able to prepare instruments-only tracks for more confident singers, tracks with individual parts for the less confident, and also tracks with all the parts included, which turned out to be very helpful during choreography rehearsals.&lt;/p&gt;
+
+&lt;p&gt;GarageBand is an entry level tool as far as recording goes, but I didn’t need anything more sophisticated for this project. Just decent MIDI sounds, some chopping and swapping of recorded samples, and basic mixing tools.&lt;/p&gt;
+
+&lt;h1 id=&quot;adjusting-tempos&quot;&gt;Adjusting tempos&lt;/h1&gt;
+
+&lt;p&gt;As we approached the end of the rehearsal process, I found I needed to adjust some tempos to be more suitable for the venue and the choreography. Rather than going back and re-recording everything at a different tempo, I was able to use Audacity’s “Change Tempo” feature (under the Effects menu) to speed up and slow down songs (or parts of songs) as required. You do need to be pretty accurate with your selection if you only want to adjust part of the song, but the UI for this feature is surprisingly functional considering Audacity’s otherwise unattractive interface. I say this because it does the sums for you; you tell it what speed it is now and what speed you want it to be, and it figures out the percentage to adjust by. Exactly the kind of thing that computers do more easily than humans.&lt;/p&gt;
+
+&lt;p&gt;So those are the tools in my practise materials toolbox. I hope you’ve come across something new here, or been reminded of something you already knew.&lt;/p&gt;
+
+&lt;p&gt;Happy arranging!&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 23 Apr 2017 11:40:00 +1000</pubDate>
+        <link>https://lucasrichter.id.au/2017/04/23/making-practise-tools-for-amateur-musicals.html</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/2017/04/23/making-practise-tools-for-amateur-musicals.html</guid>
+        
+        <category>music</category>
+        
+        <category>software</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Welcome to Jekyll!</title>
+        <description>&lt;p&gt;I haven’t done any blogging in quite a while. This is partly because I’ve been running the tech blog at work, and partly because my blogging framework (that one I wrote for fun, but ended up looking a lot like Jekyll) depended on a machine that I had to decommission, and also started looking a lot like Jekyll, only not as reliable or feature-rich.&lt;/p&gt;
+
+&lt;p&gt;So I’ve switched to Jekyll. I was actually pretty surprised by the degree of similarity between my format and Jekyll’s. It tells me I didn’t exactly have the wrong idea about that bit.&lt;/p&gt;
+
+&lt;p&gt;So out of this whole thing, I’ve learned:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Text-only, version controlled blogging is a good idea.&lt;/li&gt;
+  &lt;li&gt;Building your blogging framework around Rake is not such a good idea.&lt;/li&gt;
+  &lt;li&gt;It would have been great to learn more about Ruby gems when I was building, so I could have used them better. That said, Git submodules were not a complete waste of time.&lt;/li&gt;
+  &lt;li&gt;The “view history” aspect of the whole idea is not as useful for me as it might be for some others. Nevertheless, it’s useful to think about.&lt;/li&gt;
+  &lt;li&gt;I used to be pretty dumb about some of my predictions, and I was right on the money about some others. Jury’s still out on the rest.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;I’m hoping that I’ll publish more if I’m using tools where I don’t feel the burden of maintaining them to quite the same degree. We’ll have to see.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 27 Aug 2016 18:45:00 +1000</pubDate>
+        <link>https://lucasrichter.id.au/2016/08/27/welcome-to-jekyll.html</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/2016/08/27/welcome-to-jekyll.html</guid>
+        
+        <category>jekyll</category>
+        
+        <category>update</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Using SublimeText with Lilypond</title>
+        <description>&lt;p&gt;I’ve spent a little time recently working on my Lilypond workflow, trying to improve on the process I used when I was arranging a moderately long and complex work last year. I used a tedious process involving hand coding (in Vim, until I decided learning both Vim and Lilypond at the same time was a bad plan), running Lilypond in a terminal, then checking the output in Preview (OSX’s built in PDF viewer).&lt;/p&gt;
+
+&lt;p&gt;Once I started using &lt;a href=&quot;http://www.sublimetext.com/&quot;&gt;Sublime Text&lt;/a&gt;, I got much faster, but the feedback cycle (edit, switch to Terminal, run Lilypond, switch to Preview, check result) was still a killer. So I started using a Makefile that a mate had put together, along with Sublime’s build functionality. So now I create a PDF by hitting ⌘-B (or Ctrl-B in Windows) or F7. That saves a little time.&lt;/p&gt;
+
+&lt;p&gt;Little did I realise that the &lt;a href=&quot;https://github.com/yrammos/SubLilyPond&quot;&gt;SubLilyPond plugin&lt;/a&gt; contains a build system for creating Lilypond PDFs. SubLilyPond is pretty great even without that; it does syntax highlighting for Lilypond files. There’s some talk in the README about snippets coming up in future, and I’m looking forward to that.&lt;/p&gt;
+
+&lt;p&gt;Meanwhile, though, it’s not a bad idea to create your own Lilypond snippets, especially for layouts or instrumentations that you use frequently. &lt;a href=&quot;http://docs.sublimetext.info/en/latest/extensibility/snippets.html&quot;&gt;Creating Sublime snippets is pretty easy&lt;/a&gt; - I learned how to do it the other day. The next day, it made the difference between writing down a little musical idea I had, and forgetting it forever.&lt;/p&gt;
+
+&lt;p&gt;Friends have recommended &lt;a href=&quot;http://www.frescobaldi.org/index.html&quot;&gt;Frescobaldi&lt;/a&gt; as a graphical alternative to all that hand coding. I haven’t been able to get it working after installing it with Homebrew, and if it doesn’t work when I install it with a package manager, I’m not going to sink much time into fixing it by hand. And anyway, one of the things I like most about Lilypond is the fact that the file format is plain text. Programmers have developed some great tools for working with plain text over the years (version control, anyone?), and given that I know how to use a few of them, it seems silly not to. Plus, I just love crafting stuff by hand like this, at least as long as it’s a hobby with few deadlines.&lt;/p&gt;
+
+&lt;p&gt;Next, I’d like to get the PDF side by side with the code. Preview updates automatically when you change the file, so that’s taken care of. Mostly I think I just need a bigger (another?) screen for this whole thing to work best.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 02 Jan 2015 12:23:55 +1000</pubDate>
+        <link>https://lucasrichter.id.au/2015/01/02/using-sublimetext-with-lilypond.html</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/2015/01/02/using-sublimetext-with-lilypond.html</guid>
+        
+        <category>Lilypond</category>
+        
+        <category>Sublime Text 3</category>
+        
+        <category>Music</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>VLC video playback bug on Android KitKat - audio crackles and cuts out</title>
+        <description>&lt;p&gt;VLC media player for Android shows (but apparently isn’t responsible for) a bug with its audio playback when playing video files. Every so often the audio crackles and then cuts out for a second or so. Very annoying as you might imagine.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://trac.videolan.org/vlc/ticket/10039&quot;&gt;The bug report&lt;/a&gt; says it’s actually an upstream problem with Android v4.4 (a.k.a. KitKat). When the audio sample rate is not 44.1kHz, the audio gets out of sync and the player tries to catch up, resulting in the crackling and cut-out.&lt;/p&gt;
+
+&lt;p&gt;If you experience the bug, you can work around it by switching audio decoders in the VLC settings. Go to &lt;em&gt;Preferences&lt;/em&gt; &amp;gt; &lt;em&gt;Advanced debugging&lt;/em&gt; &amp;gt; &lt;em&gt;Audio output&lt;/em&gt; and select &lt;em&gt;AudioTrack (Java)&lt;/em&gt;. This works because the bug is in the OpenSLES audio decoder.&lt;/p&gt;
+
+&lt;p&gt;You may still notice the audio getting out of sync with the image. I’m not sure why this happens, or how to correct it (yet).&lt;/p&gt;
+</description>
+        <pubDate>Sat, 29 Mar 2014 17:20:06 +1000</pubDate>
+        <link>https://lucasrichter.id.au/2014/03/29/vlc-video-playback-bug-on-android-kitkat-audio-crackles-and-cuts-out.html</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/2014/03/29/vlc-video-playback-bug-on-android-kitkat-audio-crackles-and-cuts-out.html</guid>
+        
+        <category>VLC</category>
+        
+        <category>video</category>
+        
+        <category>bug</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>File this under &quot;Things to remember&quot;</title>
+        <description>&lt;p&gt;So it turns out that RaspBMC &lt;em&gt;(now &lt;a href=&quot;https://osmc.tv/&quot;&gt;OSMC&lt;/a&gt;)&lt;/em&gt; now doesn’t run the &lt;code&gt;cron&lt;/code&gt; daemon by default. Let’s remember that for later.&lt;/p&gt;
+</description>
+        <pubDate>Mon, 10 Mar 2014 16:17:10 +1000</pubDate>
+        <link>https://lucasrichter.id.au/2014/03/10/raspbian-doesnt-run-cron.html</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/2014/03/10/raspbian-doesnt-run-cron.html</guid>
+        
+        <category>Raspbian</category>
+        
+        <category>Raspberry Pi</category>
+        
+        <category>RaspBMC</category>
+        
+        <category>cron</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>RSpec, Rake, Travis and SQLite</title>
+        <description>&lt;p&gt;My Travis builds kept failing because the tests couldn’t see any tables in the database. This was really weird, because I was running &lt;code&gt;RAILS_ENV=test bundle exec rake db:migrate&lt;/code&gt; as a first task. I was using an in-memory SQLite database, as &lt;a href=&quot;http://about.travis-ci.org/docs/user/database-setup/#SQLite3&quot;&gt;recommended in the Travis docs&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The minute I switched to a persistent database (PostGres, if you’re curious) the problem went away. I can only infer that an in-memory database only lasts as long as the task that created it. Which makes sense, I guess.  Because I was running the migrations in Rake, and then the tests using RSpec after Rake exited, all the tables were gone by the time the tests were running.&lt;/p&gt;
+
+&lt;p&gt;What’s strange, though, is that if I’m right about all this, then I should have been able to run something like &lt;code&gt;RAILS_ENV=test bundle exec rake db:migrate db:test:prepare spec&lt;/code&gt; and have the SQLite database persist properly and all the tests pass. When I tried that, I got the same results as before. Maybe the in-memory database dies with each &lt;em&gt;task&lt;/em&gt; that gets completed, not each &lt;em&gt;rake&lt;/em&gt; run. That seems weird, but it’s the best theory I’ve got at the minute.&lt;/p&gt;
+
+&lt;p&gt;I’m confused. :(&lt;/p&gt;
+</description>
+        <pubDate>Sat, 23 Nov 2013 13:23:26 +1000</pubDate>
+        <link>https://lucasrichter.id.au/2013/11/23/rspec-rake-travis-and-sqlite.html</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/2013/11/23/rspec-rake-travis-and-sqlite.html</guid>
+        
+        <category>code</category>
+        
+        <category>travis-ci</category>
+        
+        <category>database</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>How to install libsigc++-2.0 from source in Debian</title>
+        <description>&lt;p&gt;Don’t.&lt;/p&gt;
+
+&lt;p&gt;Install this package instead:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;shell
+apt-get install libsigc++-2.0
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;If you want to compile something that relies on libsigc++ then you should also install this one:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;shell
+apt-get install libsigc++-2.0-dev
+&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;I hope that helps.&lt;/p&gt;
+
+</description>
+        <pubDate>Wed, 13 Nov 2013 19:07:47 +1000</pubDate>
+        <link>https://lucasrichter.id.au/2013/11/13/how-to-install-libsigc---in-debian.html</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/2013/11/13/how-to-install-libsigc---in-debian.html</guid>
+        
+        <category>debian</category>
+        
+        <category>linux</category>
+        
+        <category>libsigc++</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>How to configure your Fritz!Box VoIP connection with iiNet</title>
+        <description>&lt;p&gt;I just got my new phone connection working with my new router. I thought I’d write it down here in case I need to do it again some time.&lt;/p&gt;
+
+&lt;p&gt;The good news is that you can do all the basics with the wizard. The even better news is that I don’t have any advanced requirements (yet). :)&lt;/p&gt;
+
+&lt;p&gt;So log in to &lt;a href=&quot;http://fritz.box&quot;&gt;your router&lt;/a&gt; and select “Wizards” from the menu on the left. Then click “Manage your own phone numbers”. This will start the wizard for you.&lt;/p&gt;
+
+&lt;p&gt;On the screen that comes up, click “Add Telephone Number”.&lt;/p&gt;
+
+&lt;p&gt;Then for a VoIP connection (e.g. on iiNet’s Naked DSL plans), select the radio button that says “Set up Internet telephone number”, and click “Next”.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Here’s the bit where things don’t quite line up.&lt;/strong&gt; You’ll be presented with a screen where you’re asked for:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;an Internet number&lt;/li&gt;
+  &lt;li&gt;a User name&lt;/li&gt;
+  &lt;li&gt;a Password&lt;/li&gt;
+  &lt;li&gt;a Registrar&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;And what you get in your email from iiNet is:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;a phone number&lt;/li&gt;
+  &lt;li&gt;a password&lt;/li&gt;
+  &lt;li&gt;a Voicemail PIN&lt;/li&gt;
+  &lt;li&gt;a SIP domain&lt;/li&gt;
+  &lt;li&gt;a SIP server&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Don’t panic! You have all the information you need. You just have to know where to put what.&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;tr&gt; 
+    &lt;th&gt;Fritz!Box&lt;/th&gt;
+    &lt;th&gt;iiNet&lt;/th&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;Internet number&lt;/td&gt;
+    &lt;td&gt;Phone number&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;User name&lt;/td&gt;
+    &lt;td&gt;Phone number (yes, that&#39;s right)&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;Password&lt;/td&gt;
+    &lt;td&gt;Password&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;Registrar&lt;/td&gt;
+    &lt;td&gt;SIP domain&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Once you fill out the form and click Next, the router will test the connection details you entered. If all is well, you should be able to make calls now. :+1:&lt;/p&gt;
+
+&lt;p&gt;If not, you may need to fill in a couple more things.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Hop into Advanced mode for a minute. Do this by clicking on the “Expert mode” link at the top of the page. This will warn you about leaving the wizard. It’s OK, you’ll be fine.&lt;/li&gt;
+  &lt;li&gt;Get back into the wizard by clicking on the “Wizards” link at the left, then choosing the “Manage Your Own Phone Numbers” wizard.&lt;/li&gt;
+  &lt;li&gt;You should now be looking at the table of phone numbers, which now includes your number. Click the pencil to edit it.&lt;/li&gt;
+  &lt;li&gt;Here’s where you’ll see the extra stuff. The main one we’re interested in is the “Proxy server” field. Grab the &lt;strong&gt;SIP server&lt;/strong&gt; link from your email, and pop it in there.&lt;/li&gt;
+  &lt;li&gt;Just for good measure, check the box immediately below that, which says “Use Internet telephone number for registration”.&lt;/li&gt;
+  &lt;li&gt;Click OK to save, and we’re done! You should now have a working VoIP phone.&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+        <pubDate>Fri, 09 Aug 2013 22:24:12 +1000</pubDate>
+        <link>https://lucasrichter.id.au/2013/08/09/how-to-configure-your-fritz-box-voip-connection-with-iinet.html</link>
+        <guid isPermaLink="true">https://lucasrichter.id.au/2013/08/09/how-to-configure-your-fritz-box-voip-connection-with-iinet.html</guid>
+        
+        <category>phone</category>
+        
+        <category>VoIP</category>
+        
+        <category>router</category>
+        
+        <category>Fritz!Box</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>

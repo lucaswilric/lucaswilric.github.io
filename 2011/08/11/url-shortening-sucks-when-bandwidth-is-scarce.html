@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> URL Shortening Sucks When Bandwidth Is Scarce | Lucas Wilson-Richter</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link rel="stylesheet" href="/css/main.css">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="theme-color" content="#2ecc71">
+<link rel="canonical" href="https://lucasrichter.id.au/2011/08/11/url-shortening-sucks-when-bandwidth-is-scarce.html">
+<link rel="alternate" type="application/rss+xml" title="Lucas Wilson-Richter" href="https://lucasrichter.id.au/feed.xml" />
+  </head>
+  <body class="single">
+    <main class="container">
+        <header class="site-header">
+  <div class="container txt-center">
+    <nav class="navbar">
+      <ul>
+        <li><a href="/">home</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/about">about</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/feed.xml" target="_blank"><i class="icon icon-feed"></i> feed</a></li>
+      </ul>
+    </nav>
+    <a href="/" class="author-thumb">
+      <img src="/images/author.jpg" alt="Author thumbnail" class="dot">
+    </a>
+    <h1>Lucas Wilson-Richter</h1>
+    <hr class="hr">
+  </div>
+</header>
+        <section class="main-content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">URL Shortening Sucks When Bandwidth Is Scarce</h1>
+    <p class="post-meta">Aug 11, 2011</p>
+  </header>
+  <div class="post-content">
+    <p>Here’s why: when you click on a link from bit.ly (or ow.ly, or ur1.ca, or arseh.at) your browser has to go and make a request to the server that runs the URL shortener before it can do anything else - before it can even think about loading what you actually want to see. So every short link you click is slower than the unshortened link would be.</p>
+<p>And that’s just for starters. URL shorteners also mess up most of the fancy things that browsers - especially mobile browsers - do to make pages load faster. I’m talking about techniques like DNS prefetching and HTML prefetching and… well, mostly different kinds of prefetching. But they rely on knowing which URL you’re likely to look at next, and if someone has put a mask over the URL you’re heading to (say, by using a URL shortening service), those optimisations can’t do you any good.</p>
+<p>“Sure, that’s fine,” you might well be thinking, “but why mention it now?” Well, sir or madam or neuter, I’m glad you asked. The reason I’ve embarked on this particular rant at this particular point in time is that mobile web usage is only going up. That goes double if you include the use of apps that link, like Twitter, Facebook, Google+ and all the rest. The mobile web is becoming so prevalent that it’s almost difficult to get a new mobile phone that <em>doesn’t</em> have a built-in browser. So ubiquitous, in fact, that I am starting to use it rather a lot. And, as a consequence, get mightily annoyed at how bloody slow it is.</p>
+<p>We don’t need more things that slow the web down. Please keep those links long. Because let’s face it: it’s not like we’re doing anyone but Twitter any favours.</p>
+  </div>
+</article>
+        </section>
+<div class="clearfix"></div>
+<footer class="site-footer txt-center">
+  <hr>
+  <ul class="social">
+        <li><a href="" target="_blank"><i class="icon icon-"></i></a></li>
+        <li><a href="http://github.com/lucaswilric" target="_blank"><i class="icon icon-github"></i></a></li>
+  </ul>
+  <small>&copy; 2020 All rights reserved. Made with <a href="http://jekyllrb.com" target="_blank">Jekyll</a> and <i class="icon icon-heart"></i></small>
+  <small>by <a href="https://www.lucasrichter.id.au/">Lucas Wilson-Richter</a>, with thanks to <a href="http://nandomoreira.me" target="_blank">nandomoreira.me</a>.</small>
+</footer>
+    </main>
+  </body>
+</html>

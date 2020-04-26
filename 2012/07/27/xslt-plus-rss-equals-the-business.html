@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title> XSLT plus RSS equals The Business | Lucas Wilson-Richter</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link rel="stylesheet" href="/css/main.css">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="theme-color" content="#2ecc71">
+<link rel="canonical" href="https://lucasrichter.id.au/2012/07/27/xslt-plus-rss-equals-the-business.html">
+<link rel="alternate" type="application/rss+xml" title="Lucas Wilson-Richter" href="https://lucasrichter.id.au/feed.xml" />
+  </head>
+  <body class="single">
+    <main class="container">
+        <header class="site-header">
+  <div class="container txt-center">
+    <nav class="navbar">
+      <ul>
+        <li><a href="/">home</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/about">about</a></li>
+        <li class="divider">&bull;</li>
+        <li><a href="/feed.xml" target="_blank"><i class="icon icon-feed"></i> feed</a></li>
+      </ul>
+    </nav>
+    <a href="/" class="author-thumb">
+      <img src="/images/author.jpg" alt="Author thumbnail" class="dot">
+    </a>
+    <h1>Lucas Wilson-Richter</h1>
+    <hr class="hr">
+  </div>
+</header>
+        <section class="main-content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">XSLT plus RSS equals The Business</h1>
+    <p class="post-meta">Jul 27, 2012</p>
+  </header>
+  <div class="post-content">
+    <p>The content of the front page of this site is pretty much exactly as the content of the RSS feed, right? So why publish a separate index.html file if I don’t have to? If you look closely, you’ll see that it’s an RSS document. But how do we make it look like the old HTML document? Well, that’s the miracle of XSLT.</p>
+<p>XSLT stands for <em>eXtensible Stylesheet Language Transformation</em>, and it’s a method for presenting the data from XML files. It works by interpolating the data from the XML into a template. Since the RSS document is an XML file, we can use XSLT to render a HTML document from the RSS. I’d guess that that’s the way Firefox and IE present RSS feeds - as long as the XML is structured like RSS, the browser’s XSLT will present it the same way.</p>
+<p>And you know the awesome thing? The browser does all the heavy lifting; it downloads the RSS document and the XSLT template, and transforms the two into a readable document - all you need to do on the server side is provide 2 static documents.</p>
+<p>It’s nice if you like separation of concerns as well - the XSLT is about presentation and the RSS is about information.</p>
+<p>I get the feeling this is going to power a few more little projects.</p>
+<p>You can read more about XSLT <a href="http://w3schools.com/xsl/xsl_languages.asp">here</a>.</p>
+  </div>
+</article>
+        </section>
+<div class="clearfix"></div>
+<footer class="site-footer txt-center">
+  <hr>
+  <ul class="social">
+        <li><a href="" target="_blank"><i class="icon icon-"></i></a></li>
+        <li><a href="http://github.com/lucaswilric" target="_blank"><i class="icon icon-github"></i></a></li>
+  </ul>
+  <small>&copy; 2020 All rights reserved. Made with <a href="http://jekyllrb.com" target="_blank">Jekyll</a> and <i class="icon icon-heart"></i></small>
+  <small>by <a href="https://www.lucasrichter.id.au/">Lucas Wilson-Richter</a>, with thanks to <a href="http://nandomoreira.me" target="_blank">nandomoreira.me</a>.</small>
+</footer>
+    </main>
+  </body>
+</html>
